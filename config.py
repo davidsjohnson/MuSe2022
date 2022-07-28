@@ -21,7 +21,7 @@ ACTIVATION_FUNCTIONS = {
     'humor': torch.nn.Sigmoid,
     'reaction': torch.nn.Sigmoid,
     'stress':torch.nn.Tanh,
-    'tl_stress': torch.nn.Tanh,
+    'tl_stress': torch.nn.Identity, # TODO normalize labels or use no activation??
 }
 
 NUM_TARGETS = {
