@@ -22,7 +22,7 @@ def parse_args():
 
     parser = argparse.ArgumentParser(description='MuSe 2022.')
 
-    parser.add_argument('--task', type=str, required=True, choices=['humor', 'reaction', 'stress'],
+    parser.add_argument('--task', type=str, required=True, choices=['humor', 'reaction', 'stress', 'tl_stress'],
                         help='Specify the task (humour, reaction, stress).')
     parser.add_argument('--feature', required=True,
                         help='Specify the features used (only one).')
@@ -80,7 +80,7 @@ def parse_args():
 
 
 def get_loss_fn(task):
-    if task == 'stress':
+    if task in ['stress', 'tl_stress']:
         return CCCLoss(), 'CCC'
     elif task == 'humor':
         return WrappedBCELoss(), 'Binary Crossentropy'
@@ -91,7 +91,7 @@ def get_loss_fn(task):
 
 
 def get_eval_fn(task):
-    if task == 'stress':
+    if task in ['stress', 'tl_stress']:
         return calc_ccc, 'CCC'
     elif task == 'reaction':
         return mean_pearsons, 'Mean Pearsons'
@@ -105,7 +105,7 @@ def main(args):
     random.seed(10)
 
     # emo_dim only relevant for stress
-    args.emo_dim = args.emo_dim if args.task=='stress' else ''
+    args.emo_dim = args.emo_dim if args.task in ['stress', 'tl_stress'] else ''
     print('Loading data ...')
     data = load_data(args.task, args.paths, args.feature, args.emo_dim, args.normalize,
                      args.win_len, args.hop_len, save=args.cache)

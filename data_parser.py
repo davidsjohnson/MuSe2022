@@ -21,8 +21,35 @@ def get_data_partition(partition_file):
         print(os.path.abspath(partition_file))
     df = pd.read_csv(partition_file)
 
+    # TODO: Hack for now and will only return first split (find better way to integrate if possible)
+    if 'CV_Fold' in df.columns:
+        return get_data_partition_withcv(partition_file)
+
     for row in df.values:
         subject, partition = str(row[0]), row[-1]
+        subject2partition[subject] = partition
+        if partition not in partition2subject:
+            partition2subject[partition] = []
+        if subject not in partition2subject[partition]:
+            partition2subject[partition].append(subject)
+
+    return subject2partition, partition2subject
+
+def get_data_partition_withcv(partition_file, cv_split=1):
+    '''
+    Reads mappings from subject ids to their partition and vice versa based on CV split
+    :param partition_file: path to the partition file (csv with two columns: id, partition)
+    :param cv_split: which CV split to use
+    :return: dicts subject2partition, partition2subject
+    '''
+    subject2partition, partition2subject = {}, {}
+    if not os.path.exists(partition_file):
+        print(os.path.abspath(partition_file))
+    df = pd.read_csv(partition_file)
+    df = df[df.CV_Fold == cv_split]
+
+    for row in df.values:
+        subject, partition = str(row[0]), row[1]    #
         subject2partition[subject] = partition
         if partition not in partition2subject:
             partition2subject[partition] = []
@@ -43,7 +70,7 @@ def get_all_training_csvs(task, feature):
     feature_dir = os.path.join(PATH_TO_FEATURES[task], feature)
     csvs = []
     for subject in tqdm(partition_to_subject['train']):
-        if task == 'stress':
+        if task in ['stress', 'tl_stress']:
             csvs.append(os.path.join(feature_dir, f'{subject}.csv'))
         elif task == 'reaction':
             subject = subject[1:-1] 
@@ -148,7 +175,7 @@ def segment_stress(sample, win_len, hop_len):
 
 
 def load_stress_subject(feature, subject_id, partition, emo_dim, normalizer, apply_segmentation=True,
-                win_len=200, hop_len=100):
+                win_len=200, hop_len=100, task='stress'):
     '''
     Loads data for a single subject for the stress task
     :param feature: feature name
@@ -168,7 +195,7 @@ def load_stress_subject(feature, subject_id, partition, emo_dim, normalizer, app
 
     feature_idx = 2
 
-    feature_path = PATH_TO_FEATURES['stress']
+    feature_path = PATH_TO_FEATURES[task]
 
     feature_file = os.path.join(feature_path, feature, subject_id + '.csv')
     assert os.path.exists(
@@ -183,7 +210,7 @@ def load_stress_subject(feature, subject_id, partition, emo_dim, normalizer, app
     sample_data.append(feature_data)
 
     # parse labels
-    label_path = PATH_TO_LABELS['stress']
+    label_path = PATH_TO_LABELS[task]
     label_file = os.path.join(label_path, emo_dim, subject_id + '.csv')
     assert os.path.exists(
         label_file), f'Error: no available "{emo_dim}" label file for video "{subject_id}": "{label_file}".'
@@ -308,12 +335,12 @@ def load_data(task, paths, feature, emo_dim, normalize=True, win_len=200, hop_le
         apply_segmentation = segment_train and partition=='train'
 
         for subject_id in tqdm(subject_ids):
-            if task == 'stress':
+            if task in ['stress', 'tl_stress']:
                 features, labels, metas = load_stress_subject(feature=feature, subject_id=subject_id,
                                                               partition=partition, emo_dim=emo_dim,
                                                               normalizer=normalizer,
                                                               apply_segmentation=apply_segmentation, win_len=win_len,
-                                                              hop_len=hop_len)
+                                                              hop_len=hop_len, task=task)
             elif task == 'humor':
                 features, labels, metas = load_humor_subject(feature=feature, subject_id=subject_id,
                                                              normalizer=normalizer)
