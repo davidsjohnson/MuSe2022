@@ -4,7 +4,7 @@ import torch
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # adjust your paths here. Recommended to keep it that way in order not to run into git conflicts
-DATA_PATH = '/data/muse_22_ext_multi_nt_lab/'
+DATA_PATH = 'data/'
 BASE_PATH = '../MuSe2022'
 
 PATH_TO_FEATURES = {
@@ -21,7 +21,7 @@ ACTIVATION_FUNCTIONS = {
     'humor': torch.nn.Sigmoid,
     'reaction': torch.nn.Sigmoid,
     'stress':torch.nn.Tanh,
-    'tl_stress': torch.nn.Identity, # TODO normalize labels or use no activation??
+    'tl_stress': torch.nn.Tanh, # TODO normalize labels or use no activation??
 }
 
 NUM_TARGETS = {
