@@ -1,6 +1,14 @@
 import torch
 import torch.nn as nn
 
+class RMSELoss(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.mse = torch.nn.MSELoss()
+
+    def forward(self, yhat, y, seq_lens=None):
+        return torch.sqrt(self.mse(yhat, y))
+
 class CCCLoss(nn.Module):
     def __init__(self):
         super(CCCLoss, self).__init__()
