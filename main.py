@@ -81,7 +81,7 @@ def parse_args():
 
 def get_loss_fn(task):
     if task in ['stress', 'tl_stress']:
-        return RMSELoss(), 'RMSEgi'
+        return CCCLoss(), 'CCC'
     elif task == 'humor':
         return WrappedBCELoss(), 'Binary Crossentropy'
     elif task == 'reaction':
