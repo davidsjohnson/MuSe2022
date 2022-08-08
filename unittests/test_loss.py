@@ -4,7 +4,6 @@ import torch
 from loss import CCCLoss
 from eval import calc_ccc, flatten_stress_for_ccc
 
-
 class TestLosses:
 
     def test_cccloss(self):
@@ -20,4 +19,3 @@ class TestLosses:
                               flatten_stress_for_ccc(y_true.numpy()))
 
         assert np.isclose(ccc_loss.numpy(), 1-ccc_metric)
-
