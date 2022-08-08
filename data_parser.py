@@ -25,8 +25,13 @@ def get_data_partition(partition_file, cv_split=None):
     if cv_split is not None:
         return get_data_partition_singlefold(partition_file, cv_split=cv_split)
 
+    # if there is CV infor in partition file then get first CV for training, test, devel
+    if 'CV_Fold' in df.columns:
+        return get_data_partition_singlefold(partition_file, cv_split=1)
+
+
     for row in df.values:
-        subject, partition = str(row[0]), row[-1]
+        subject, partition = str(row[0]), row[1]
         subject2partition[subject] = partition
         if partition not in partition2subject:
             partition2subject[partition] = []

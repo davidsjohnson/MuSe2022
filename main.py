@@ -75,11 +75,11 @@ def parse_args(cv=False):
                         help='Path to a pretrained model to load for transfer learning')
     parser.add_argument('--freeze_rnn', action='store_true',
                         help='When a TL model is provided this will freeze the RNN layers.')
+    parser.add_argument('--normalize_labels', action='store_true',
+                        help=f'Specify if labels should be min/max scaled between -1 and 1 '
+                             f'for compatibility with Tanh activation')
 
     if cv:
-        parser.add_argument('--normalize_labels', action='store_true',
-                            help=f'Specify if labels should be min/max scaled between -1 and 1 '
-                                 f'for compatibility with Tanh activation')
         parser.add_argument('--n_folds', type=int, required=True,
                             help='Specify the number of folds for cross validation if (only needed for main_tl)')
 
