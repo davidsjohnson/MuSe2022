@@ -50,7 +50,7 @@ PARTITION_FILES = {task: os.path.join(path_to_meta, 'partition.csv') for task,pa
 
 REACTION_LABELS = ['Adoration', 'Amusement', 'Anxiety', 'Disgust', 'Empathic-Pain', 'Fear', 'Surprise']
 
-OUTPUT_PATH = os.path.join(BASE_PATH, 'results')
+OUTPUT_PATH = os.path.join(BASE_PATH, 'output')
 LOG_FOLDER = os.path.join(OUTPUT_PATH, 'log_muse')
 DATA_FOLDER = os.path.join(OUTPUT_PATH, 'data_muse')
 MODEL_FOLDER = os.path.join(OUTPUT_PATH, 'model_muse')
