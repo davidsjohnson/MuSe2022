@@ -18,7 +18,7 @@ from dataset import MuSeDataset, custom_collate_fn
 from data_parser import load_data
 
 
-def parse_args():
+def parse_args(cv=False):
 
     parser = argparse.ArgumentParser(description='MuSe 2022.')
 
@@ -71,6 +71,16 @@ def parse_args():
                         help='L2-Penalty')
     parser.add_argument('--eval_model', type=str, default=None,
                         help='Specify model which is to be evaluated; no training with this option (default: False).')
+    parser.add_argument('--tl_model', type=str, default=None,
+                        help='Path to a pretrained model to load for transfer learning')
+    parser.add_argument('--freeze_rnn', action='store_true',
+                        help='When a TL model is provided this will freeze the RNN layers.')
+
+    if cv:
+        parser.add_argument('--n_folds', type=int, required=True,
+                            help='Specify the number of folds for cross validation if (only needed for main_tl)')
+
+
 
     args = parser.parse_args()
     if not (args.result_csv is None) and args.predict:

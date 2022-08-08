@@ -23,7 +23,7 @@ def get_data_partition(partition_file):
 
     # TODO: Hack for now and will only return first split (find better way to integrate if possible)
     if 'CV_Fold' in df.columns:
-        return get_data_partition_withcv(partition_file)
+        return get_data_partition_singlefold(partition_file)
 
     for row in df.values:
         subject, partition = str(row[0]), row[-1]
@@ -35,7 +35,7 @@ def get_data_partition(partition_file):
 
     return subject2partition, partition2subject
 
-def get_data_partition_withcv(partition_file, cv_split=1):
+def get_data_partition_singlefold(partition_file, cv_split=1):
     '''
     Reads mappings from subject ids to their partition and vice versa based on CV split
     :param partition_file: path to the partition file (csv with two columns: id, partition)
@@ -57,6 +57,19 @@ def get_data_partition_withcv(partition_file, cv_split=1):
             partition2subject[partition].append(subject)
 
     return subject2partition, partition2subject
+
+
+def get_data_partition_allfolds(partition_file, n_folds):
+    '''
+    Reads mappings from subject ids to their partition and vice versa based on CV split
+    :param partition_file: path to the partition file (csv with two columns: id, partition)
+    :param n_cv: number of CV folders in partition file
+    :return: generator with dicts subject2partition, partition2subject for each CV
+    '''
+
+    for i in range(1, n_folds+1):
+        yield get_data_partition_singlefold(partition_file, cv_split=i)
+
 
 
 def get_all_training_csvs(task, feature):
@@ -291,6 +304,75 @@ def load_reaction_subject(feature, subject_id, normalizer):
 
 
 ################# LOAD DATASETS USING THE SPECIFIC METHODS ABOVE #############################################
+
+def load_data_cv(task, n_folds, paths, feature, emo_dim, normalize=True, win_len=200, hop_len=100, save=False,
+                 segment_train=True):
+    '''
+    Loads the complete data sets
+    :param task: task
+    :param n_folds: number of CV folds in partition file
+    :param paths: dict for paths to data and partition file
+    :param feature: feature to load
+    :param emo_dim: emotion dimension to load labels for
+    :param normalize: whether normalization is desired
+    :param win_len: window length for segmentation (ignored for humor - and reaction?)
+    :param hop_len: hop length for segmentation (ignored for humor - and reaction?)
+    :param save: whether to cache the loaded data as .pickle
+    :param segment_train: whether to do segmentation on the training data
+    :return: generator, for each CV fold, with keys 'train', 'devel' and 'test', each in turn a dict with keys:
+        feature: list of ndarrays shaped (seq_length, features)
+        labels: corresponding list of ndarrays shaped (seq_length, 1) for n-to-n tasks like stress, (1,) for n-to-1
+            task humor, (7,) for n-to-7 task reaction
+        meta: corresponding list of ndarrays shaped (seq_length, metadata_dim) where seq_length=1 for n-to-1/n-to-7
+    '''
+
+    for cv_fold, (subject2partition, partition2subject) in enumerate(get_data_partition_allfolds(paths['partition'], n_folds=n_folds), start=1):
+
+        data_file_name = f'data_{task}_{feature}_{emo_dim+"_" if len(emo_dim)>0 else ""}_{"norm_" if normalize else ""}{win_len}_' \
+                         f'{hop_len}{"_seg" if segment_train else ""}_cv{cv_fold}.pkl'
+        data_file = os.path.join(paths['data'], data_file_name)
+
+        if os.path.exists(data_file):  # check if file of preprocessed data exists
+            print(f'Find cached data "{os.path.basename(data_file)}".')
+            data = pickle.load(open(data_file, 'rb'))
+            yield cv_fold, data
+        else:
+            print('Constructing data from scratch ...')
+            data = {'train': {'feature': [], 'label': [], 'meta': []},
+                    'devel': {'feature': [], 'label': [], 'meta': []},
+                    'test': {'feature': [], 'label': [], 'meta': []}}
+            print('Normalising data') if normalize else None
+            normalizer = fit_normalizer(task=task, feature=feature) if normalize else None
+
+            for partition, subject_ids in partition2subject.items():
+                print(f'Setting up {partition} Partition')
+
+                apply_segmentation = segment_train and partition=='train'
+
+                for subject_id in tqdm(subject_ids):
+                    if task in ['stress', 'tl_stress']:
+                        features, labels, metas = load_stress_subject(feature=feature, subject_id=subject_id,
+                                                                      partition=partition, emo_dim=emo_dim,
+                                                                      normalizer=normalizer,
+                                                                      apply_segmentation=apply_segmentation, win_len=win_len,
+                                                                      hop_len=hop_len, task=task)
+                    elif task == 'humor':
+                        features, labels, metas = load_humor_subject(feature=feature, subject_id=subject_id,
+                                                                     normalizer=normalizer)
+                    elif task == 'reaction':
+                        features, labels, metas = load_reaction_subject(feature=feature, subject_id=subject_id,
+                                                                        normalizer=normalizer)
+
+                    data[partition]['feature'].extend(features)
+                    data[partition]['label'].extend(labels)
+                    data[partition]['meta'].extend(metas)
+
+            if save:  # save loaded and preprocessed data
+                print('Saving data...')
+                pickle.dump(data, open(data_file, 'wb'))
+
+            yield cv_fold, data
+
 
 def load_data(task, paths, feature, emo_dim, normalize=True, win_len=200, hop_len=100, save=False,
               segment_train=True):
