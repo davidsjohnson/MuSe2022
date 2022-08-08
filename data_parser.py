@@ -4,16 +4,17 @@ import pandas as pd
 import pickle
 from glob import glob
 from tqdm import tqdm 
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 from config import PATH_TO_FEATURES, PATH_TO_LABELS, PARTITION_FILES
 
 ################# GLOBAL UTILITY METHODS #############################################
 
-def get_data_partition(partition_file):
+def get_data_partition(partition_file, cv_split=None):
     '''
     Reads mappings from subject ids to their partition and vice versa
     :param partition_file: path to the partition file (csv with two columns: id, partition)
+    :param cv_split: which CV split to use
     :return: dicts subject2partition, partition2subject
     '''
     subject2partition, partition2subject = {}, {}
@@ -21,9 +22,8 @@ def get_data_partition(partition_file):
         print(os.path.abspath(partition_file))
     df = pd.read_csv(partition_file)
 
-    # TODO: Hack for now and will only return first split (find better way to integrate if possible)
-    if 'CV_Fold' in df.columns:
-        return get_data_partition_singlefold(partition_file)
+    if cv_split is not None:
+        return get_data_partition_singlefold(partition_file, cv_split=cv_split)
 
     for row in df.values:
         subject, partition = str(row[0]), row[-1]
@@ -63,7 +63,7 @@ def get_data_partition_allfolds(partition_file, n_folds):
     '''
     Reads mappings from subject ids to their partition and vice versa based on CV split
     :param partition_file: path to the partition file (csv with two columns: id, partition)
-    :param n_cv: number of CV folders in partition file
+    :param n_folds: number of CV folds in partition file
     :return: generator with dicts subject2partition, partition2subject for each CV
     '''
 
@@ -72,14 +72,15 @@ def get_data_partition_allfolds(partition_file, n_folds):
 
 
 
-def get_all_training_csvs(task, feature):
+def get_all_training_csvs(task, feature, cv_split=None):
     '''
     Loads a list of all feature csvs that are used for training a certain task
     :param task: humor, stress etc.
     :param feature: name of the feature folder (e.g. 'egemaps')
+    :param cv_split: which CV split to use
     :return: list of csvs
     '''
-    _, partition_to_subject = get_data_partition(PARTITION_FILES[task])
+    _, partition_to_subject = get_data_partition(PARTITION_FILES[task], cv_split=cv_split)
     feature_dir = os.path.join(PATH_TO_FEATURES[task], feature)
     csvs = []
     for subject in tqdm(partition_to_subject['train']):
@@ -93,18 +94,40 @@ def get_all_training_csvs(task, feature):
 
     return csvs
 
+def get_all_training_label_csvs(task, label, cv_split=None):
+    '''
+    Loads a list of all feature csvs that are used for training a certain task
+    :param task: humor, stress etc.
+    :param feature: name of the feature folder (e.g. 'egemaps')
+    :return: list of csvs
+    '''
+    _, partition_to_subject = get_data_partition(PARTITION_FILES[task], cv_split)
+    label_dir = os.path.join(PATH_TO_LABELS[task], label)
+    csvs = []
+    for subject in tqdm(partition_to_subject['train']):
+        if task in ['stress', 'tl_stress']:
+            csvs.append(os.path.join(label_dir, f'{subject}.csv'))
+        elif task == 'reaction':
+            subject = subject[1:-1] 
+            csvs.append(os.path.join(label_dir, f'{subject}.csv'))
+        elif task == 'humor':
+            csvs.extend(sorted(glob(os.path.join(label_dir, subject, "*.csv"))))
 
-def fit_normalizer(task, feature, feature_idx=2):
+    return csvs
+
+
+def fit_normalizer(task, feature, cv_split=None, feature_idx=2):
     '''
     Fits a sklearn StandardScaler based on training data
     :param task: task
     :param feature: feature
+    :param cv_split: which CV split to use
     :param feature_idx: index in the feature csv where the features start
     (typically 2, features starting after segment_id, timestamp)
     :return: fitted sklearn.preprocessing.StandardScaler
     '''
     # load training subjects
-    training_csvs = get_all_training_csvs(task, feature)
+    training_csvs = get_all_training_csvs(task, feature, cv_split=cv_split)
     if task == 'reaction': 
         print('Concatenating csvs') 
         df = pd.concat([pd.read_csv(training_csv) for training_csv in tqdm(training_csvs)]) 
@@ -113,6 +136,18 @@ def fit_normalizer(task, feature, feature_idx=2):
     values = df.iloc[:,feature_idx:].values
     print(f'Scaling values') 
     normalizer = StandardScaler().fit(values)
+    return normalizer
+
+def fit_label_normalizer(task, label, cv_split=None):
+    training_csvs = get_all_training_label_csvs(task, label, cv_split=cv_split)
+    if task == 'reaction':
+        print('Concatenating csvs')
+        df = pd.concat([pd.read_csv(training_csv) for training_csv in tqdm(training_csvs)])
+    else:
+        df = pd.concat([pd.read_csv(training_csv) for training_csv in training_csvs])
+    values = df[['value']].values
+    print(f'Scaling Labels')
+    normalizer = MinMaxScaler(feature_range=(-1, 1)).fit(values)
     return normalizer
 
 
@@ -187,7 +222,7 @@ def segment_stress(sample, win_len, hop_len):
     return segmented_sample
 
 
-def load_stress_subject(feature, subject_id, partition, emo_dim, normalizer, apply_segmentation=True,
+def load_stress_subject(feature, subject_id, partition, emo_dim, normalizer, label_normalizer, apply_segmentation=True,
                 win_len=200, hop_len=100, task='stress'):
     '''
     Loads data for a single subject for the stress task
@@ -232,6 +267,9 @@ def load_stress_subject(feature, subject_id, partition, emo_dim, normalizer, app
     timestamps = df.timestamp.values
 
     label_data = pd.DataFrame(data=df['value'].values, columns=[emo_dim])
+    if label_normalizer is not None:
+        label_data.iloc[:, 0] = label_normalizer.transform(label_data[[emo_dim]].values)
+
     sample_data.append(label_data)
 
     # concat
@@ -305,7 +343,7 @@ def load_reaction_subject(feature, subject_id, normalizer):
 
 ################# LOAD DATASETS USING THE SPECIFIC METHODS ABOVE #############################################
 
-def load_data_cv(task, n_folds, paths, feature, emo_dim, normalize=True, win_len=200, hop_len=100, save=False,
+def load_data_cv(task, n_folds, paths, feature, emo_dim, normalize=True, normalize_labels=True, win_len=200, hop_len=100, save=False,
                  segment_train=True):
     '''
     Loads the complete data sets
@@ -326,23 +364,24 @@ def load_data_cv(task, n_folds, paths, feature, emo_dim, normalize=True, win_len
         meta: corresponding list of ndarrays shaped (seq_length, metadata_dim) where seq_length=1 for n-to-1/n-to-7
     '''
 
-    for cv_fold, (subject2partition, partition2subject) in enumerate(get_data_partition_allfolds(paths['partition'], n_folds=n_folds), start=1):
+    for cv_split, (subject2partition, partition2subject) in enumerate(get_data_partition_allfolds(paths['partition'], n_folds=n_folds), start=1):
 
         data_file_name = f'data_{task}_{feature}_{emo_dim+"_" if len(emo_dim)>0 else ""}_{"norm_" if normalize else ""}{win_len}_' \
-                         f'{hop_len}{"_seg" if segment_train else ""}_cv{cv_fold}.pkl'
+                         f'{hop_len}{"_seg" if segment_train else ""}_cv{cv_split}.pkl'
         data_file = os.path.join(paths['data'], data_file_name)
 
         if os.path.exists(data_file):  # check if file of preprocessed data exists
             print(f'Find cached data "{os.path.basename(data_file)}".')
             data = pickle.load(open(data_file, 'rb'))
-            yield cv_fold, data
+            yield cv_split, data
         else:
             print('Constructing data from scratch ...')
             data = {'train': {'feature': [], 'label': [], 'meta': []},
                     'devel': {'feature': [], 'label': [], 'meta': []},
                     'test': {'feature': [], 'label': [], 'meta': []}}
             print('Normalising data') if normalize else None
-            normalizer = fit_normalizer(task=task, feature=feature) if normalize else None
+            normalizer = fit_normalizer(task=task, feature=feature, cv_split=cv_split) if normalize else None
+            label_normalizer = fit_label_normalizer(task=task, label=emo_dim, cv_split=cv_split) if normalize_labels else None
 
             for partition, subject_ids in partition2subject.items():
                 print(f'Setting up {partition} Partition')
@@ -353,7 +392,7 @@ def load_data_cv(task, n_folds, paths, feature, emo_dim, normalize=True, win_len
                     if task in ['stress', 'tl_stress']:
                         features, labels, metas = load_stress_subject(feature=feature, subject_id=subject_id,
                                                                       partition=partition, emo_dim=emo_dim,
-                                                                      normalizer=normalizer,
+                                                                      normalizer=normalizer, label_normalizer=label_normalizer,
                                                                       apply_segmentation=apply_segmentation, win_len=win_len,
                                                                       hop_len=hop_len, task=task)
                     elif task == 'humor':
@@ -371,10 +410,10 @@ def load_data_cv(task, n_folds, paths, feature, emo_dim, normalize=True, win_len
                 print('Saving data...')
                 pickle.dump(data, open(data_file, 'wb'))
 
-            yield cv_fold, data
+            yield cv_split, data
 
 
-def load_data(task, paths, feature, emo_dim, normalize=True, win_len=200, hop_len=100, save=False,
+def load_data(task, paths, feature, emo_dim, normalize=True, normalize_labels=False, win_len=200, hop_len=100, save=False,
               segment_train=True):
     '''
     Loads the complete data sets
@@ -410,6 +449,7 @@ def load_data(task, paths, feature, emo_dim, normalize=True, win_len=200, hop_le
     subject2partition, partition2subject = get_data_partition(paths['partition'])
     print('Normalising data') if normalize else None 
     normalizer = fit_normalizer(task=task, feature=feature) if normalize else None
+    label_normalizer = fit_label_normalizer(task=task, label=emo_dim) if normalize_labels else None
 
     for partition, subject_ids in partition2subject.items():
         print(f'Setting up {partition} Partition') 
@@ -420,7 +460,7 @@ def load_data(task, paths, feature, emo_dim, normalize=True, win_len=200, hop_le
             if task in ['stress', 'tl_stress']:
                 features, labels, metas = load_stress_subject(feature=feature, subject_id=subject_id,
                                                               partition=partition, emo_dim=emo_dim,
-                                                              normalizer=normalizer,
+                                                              normalizer=normalizer, label_normalizer=label_normalizer,
                                                               apply_segmentation=apply_segmentation, win_len=win_len,
                                                               hop_len=hop_len, task=task)
             elif task == 'humor':
