@@ -90,7 +90,6 @@ def process_onefold(data, cv_fold, args):
               f"{f' | [Test {eval_str}]: {test_scores[best_idx]:7.4f}' if not args.predict else ''}")
         print('=' * 50)
 
-        # TODO think about how to log with CV
         model_file = best_model_files[best_idx]  # best model of all of the seeds
         if not args.result_csv is None:
             log_results(args.result_csv, params=args, seeds = list(seeds), metric_name=eval_str,
@@ -134,7 +133,6 @@ def run_cv(args):
     for cv_fold, data in cv_data:
         args.cv_fold = cv_fold
         process_onefold(data, cv_fold, args)
-        # TODO should be ready but probaly should do one debug round before deploying
 
 def main():
     args = muse_main.parse_args(cv=True)

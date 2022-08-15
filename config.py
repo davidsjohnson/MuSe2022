@@ -21,7 +21,7 @@ ACTIVATION_FUNCTIONS = {
     'humor': torch.nn.Sigmoid,
     'reaction': torch.nn.Sigmoid,
     'stress':torch.nn.Tanh,
-    'tl_stress': torch.nn.Tanh, # TODO normalize labels or use no activation??
+    'tl_stress': torch.nn.Tanh, # TODO compare Tanh (with label norm) with no activation (no label norm)
 }
 
 NUM_TARGETS = {
