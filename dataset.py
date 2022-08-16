@@ -35,7 +35,7 @@ class MuSeDataset(Dataset):
         if max_label_len > 1:
             labels = [np.pad(l, pad_width=((0, max_label_len-l.shape[0]),(0,0))) for l in labels]
         self.labels = [torch.tensor(l, dtype=torch.float) for l in labels]
-        self.metas = [np.pad(meta, pad_width=((0,max_label_len-meta.shape[0]),(0,0)), mode='empty') for meta in metas]
+        self.metas = [np.pad(meta, pad_width=((0,max_feature_len-meta.shape[0]),(0,0)), mode='empty') for meta in metas]    # changed to max feautre_len to be compatible with tl_stress single labels
 
         self.metas = [m.astype(np.object).tolist() for m in self.metas]
         pass

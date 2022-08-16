@@ -15,7 +15,7 @@ PATH_TO_FEATURES = {
 }
 
 # humor is labelled every 2s, but features are extracted every 500ms
-N_TO_1_TASKS = {'humor', 'reaction'}
+N_TO_1_TASKS = {'humor', 'reaction', 'tl_stress'}
 
 ACTIVATION_FUNCTIONS = {
     'humor': torch.nn.Sigmoid,

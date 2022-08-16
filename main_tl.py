@@ -49,6 +49,8 @@ def process_onefold(data, cv_fold, args):
                 print(f'Loading model for transfer learning from {model_path}')
                 model = torch.load(model_path, map_location=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
 
+                model.set_n_to_1(True)  # set model for use with MBP single value ground truth
+
                 # freeze layers so only ouput layers are finetuned
                 if args.freeze_rnn:
                     for param in model.parameters():

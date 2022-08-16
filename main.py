@@ -93,20 +93,20 @@ def parse_args(cv=False):
 
 
 def get_loss_fn(task):
-    if task in ['stress', 'tl_stress']:
+    if task in ['stress']:
         return CCCLoss(), 'CCC'
     elif task == 'humor':
         return WrappedBCELoss(), 'Binary Crossentropy'
-    elif task == 'reaction':
+    elif task in ['reaction', 'tl_stress']:
         return WrappedMSELoss(reduction='mean'), 'MSE'
 
 
 
 
 def get_eval_fn(task):
-    if task in ['stress', 'tl_stress']:
+    if task in ['stress']:
         return calc_ccc, 'CCC'
-    elif task == 'reaction':
+    elif task in ['reaction', 'tl_stress']:
         return mean_pearsons, 'Mean Pearsons'
     elif task == 'humor':
         return calc_auc, 'AUC-Score'

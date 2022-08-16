@@ -300,8 +300,15 @@ def load_stress_subject(feature, subject_id, partition, emo_dim, normalizer, lab
             meta = np.column_stack((np.array([int(subject_id)] * len(segment)),
                                     segment.iloc[:, :feature_idx].values))  # video_id, timestamp, segment_id
             metas.append(meta)
-            labels.append(segment.iloc[:, -n_emo_dims:].values)
+            if task == 'tl_stress':
+                labels.append(np.mean(segment.iloc[:, -n_emo_dims:].values))
+            else:
+                labels.append(segment.iloc[:, -n_emo_dims:].values)
             features.append(segment.iloc[:, feature_idx:-n_emo_dims].values)
+
+
+    if task == 'tl_stress':
+        labels = np.expand_dims(labels, -1)
 
     return features, labels, metas
 
