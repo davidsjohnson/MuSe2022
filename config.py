@@ -11,15 +11,17 @@ PATH_TO_FEATURES = {
     'humor': os.path.join(DATA_PATH, 'c1_muse_humor_2022/feature_segments'),
     'reaction': os.path.join(DATA_PATH, 'c2_muse_reaction_2022/feats'),
     'stress': os.path.join(DATA_PATH, 'c3_muse_stress_2022/feature_segments'),
-    'tl_stress': os.path.join(DATA_PATH, 'tl_stress_2022/feature_segments')
+    'tl_stress': os.path.join(DATA_PATH, 'tl_stress_2022/feature_segments'),
+    'sex_test': os.path.join(DATA_PATH, 'tl_stress_2022/feature_segments'),
 }
 
 # humor is labelled every 2s, but features are extracted every 500ms
-N_TO_1_TASKS = {'humor', 'reaction', 'tl_stress'}
+N_TO_1_TASKS = {'humor', 'reaction', 'tl_stress', 'sex_test'}
 
 ACTIVATION_FUNCTIONS = {
     'humor': torch.nn.Sigmoid,
     'reaction': torch.nn.Sigmoid,
+    'sex_test': torch.nn.Sigmoid,
     'stress':torch.nn.Tanh,
     'tl_stress': torch.nn.Tanh, # TODO compare Tanh (with label norm) with no activation (no label norm)
 }
@@ -28,7 +30,8 @@ NUM_TARGETS = {
     'humor': 1,
     'reaction': 7,
     'stress': 1,
-    'tl_stress': 1
+    'tl_stress': 1,
+    'sex_test': 2,
 }
 
 
@@ -36,7 +39,8 @@ PATH_TO_LABELS = {
     'humor': os.path.join(DATA_PATH, 'c1_muse_humor_2022/label_segments'),
     'reaction': os.path.join(DATA_PATH, 'c2_muse_reaction_2022'),
     'stress': os.path.join(DATA_PATH, 'c3_muse_stress_2022/label_segments'),
-    'tl_stress': os.path.join(DATA_PATH, 'tl_stress_2022/label_segments')
+    'tl_stress': os.path.join(DATA_PATH, 'tl_stress_2022/label_segments'),
+    'sex_test': os.path.join(DATA_PATH, 'tl_stress_2022/label_segments'),
 }
 
 PATH_TO_METADATA = {
@@ -44,6 +48,7 @@ PATH_TO_METADATA = {
     'reaction':os.path.join(DATA_PATH, 'c2_muse_reaction_2022'),
     'stress': os.path.join(DATA_PATH, 'c3_muse_stress_2022/metadata'),
     'tl_stress': os.path.join(DATA_PATH, 'tl_stress_2022/metadata'),
+    'sex_test': os.path.join(DATA_PATH, 'tl_stress_2022/metadata'),
 }
 
 PARTITION_FILES = {task: os.path.join(path_to_meta, 'partition.csv') for task,path_to_meta in PATH_TO_METADATA.items()}

@@ -22,7 +22,7 @@ def parse_args(cv=False):
 
     parser = argparse.ArgumentParser(description='MuSe 2022.')
 
-    parser.add_argument('--task', type=str, required=True, choices=['humor', 'reaction', 'stress', 'tl_stress'],
+    parser.add_argument('--task', type=str, required=True, choices=['humor', 'reaction', 'stress', 'tl_stress', 'sex_test'],
                         help='Specify the task (humour, reaction, stress).')
     parser.add_argument('--feature', required=True,
                         help='Specify the features used (only one).')
@@ -95,7 +95,7 @@ def parse_args(cv=False):
 def get_loss_fn(task):
     if task in ['stress']:
         return CCCLoss(), 'CCC'
-    elif task == 'humor':
+    elif task in ['humor', 'sex_test']:
         return WrappedBCELoss(), 'Binary Crossentropy'
     elif task in ['reaction', 'tl_stress']:
         return WrappedMSELoss(reduction='mean'), 'MSE'
@@ -108,7 +108,7 @@ def get_eval_fn(task):
         return calc_ccc, 'CCC'
     elif task in ['reaction', 'tl_stress']:
         return mean_pearsons, 'Mean Pearsons'
-    elif task == 'humor':
+    elif task in ['humor', 'sex_test']:
         return calc_auc, 'AUC-Score'
 
 

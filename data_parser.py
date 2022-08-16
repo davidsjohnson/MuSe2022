@@ -4,7 +4,7 @@ import pandas as pd
 import pickle
 from glob import glob
 from tqdm import tqdm 
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, OneHotEncoder
 
 from config import PATH_TO_FEATURES, PATH_TO_LABELS, PARTITION_FILES
 
@@ -89,7 +89,7 @@ def get_all_training_csvs(task, feature, cv_split=None):
     feature_dir = os.path.join(PATH_TO_FEATURES[task], feature)
     csvs = []
     for subject in tqdm(partition_to_subject['train']):
-        if task in ['stress', 'tl_stress']:
+        if task in ['stress', 'tl_stress', 'sex_test']:
             csvs.append(os.path.join(feature_dir, f'{subject}.csv'))
         elif task == 'reaction':
             subject = subject[1:-1] 
@@ -110,7 +110,7 @@ def get_all_training_label_csvs(task, label, cv_split=None):
     label_dir = os.path.join(PATH_TO_LABELS[task], label)
     csvs = []
     for subject in tqdm(partition_to_subject['train']):
-        if task in ['stress', 'tl_stress']:
+        if task in ['stress', 'tl_stress', 'sex_test']:
             csvs.append(os.path.join(label_dir, f'{subject}.csv'))
         elif task == 'reaction':
             subject = subject[1:-1] 
@@ -300,7 +300,7 @@ def load_stress_subject(feature, subject_id, partition, emo_dim, normalizer, lab
             meta = np.column_stack((np.array([int(subject_id)] * len(segment)),
                                     segment.iloc[:, :feature_idx].values))  # video_id, timestamp, segment_id
             metas.append(meta)
-            if task == 'tl_stress':
+            if task in ['tl_stress', 'sex_test']:
                 labels.append(np.mean(segment.iloc[:, -n_emo_dims:].values))
             else:
                 labels.append(segment.iloc[:, -n_emo_dims:].values)
@@ -401,7 +401,7 @@ def load_data_cv(task, n_folds, paths, feature, emo_dim, normalize=True, normali
                 apply_segmentation = segment_train and partition=='train'
 
                 for subject_id in tqdm(subject_ids):
-                    if task in ['stress', 'tl_stress']:
+                    if task in ['stress', 'tl_stress', 'sex_test']:
                         features, labels, metas = load_stress_subject(feature=feature, subject_id=subject_id,
                                                                       partition=partition, emo_dim=emo_dim,
                                                                       normalizer=normalizer, label_normalizer=label_normalizer,
@@ -413,6 +413,10 @@ def load_data_cv(task, n_folds, paths, feature, emo_dim, normalize=True, normali
                     elif task == 'reaction':
                         features, labels, metas = load_reaction_subject(feature=feature, subject_id=subject_id,
                                                                         normalizer=normalizer)
+
+
+                    if task == 'sex_test':
+                        labels = np.eye(2)[np.array(labels, dtype=int)]
 
                     data[partition]['feature'].extend(features)
                     data[partition]['label'].extend(labels)
@@ -469,7 +473,7 @@ def load_data(task, paths, feature, emo_dim, normalize=True, normalize_labels=Fa
         apply_segmentation = segment_train and partition=='train'
 
         for subject_id in tqdm(subject_ids):
-            if task in ['stress', 'tl_stress']:
+            if task in ['stress', 'tl_stress', 'sex_test']:
                 features, labels, metas = load_stress_subject(feature=feature, subject_id=subject_id,
                                                               partition=partition, emo_dim=emo_dim,
                                                               normalizer=normalizer, label_normalizer=label_normalizer,

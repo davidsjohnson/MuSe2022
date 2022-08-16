@@ -126,12 +126,12 @@ def run_cv(args):
     random.seed(10)
 
     # emo_dim only relevant for stress
-    args.emo_dim = args.emo_dim if args.task in ['stress', 'tl_stress'] else ''
+    args.emo_dim = args.emo_dim if args.task in ['stress', 'tl_stress', 'sex_test'] else ''
 
     # get cv based data from partitions
     print('Loading data ...')
     cv_data = dp.load_data_cv(args.task, args.n_folds, args.paths, args.feature, args.emo_dim, args.normalize,
-                              args.win_len, args.hop_len, save=args.cache)
+                              args.normalize_labels, args.win_len, args.hop_len, save=args.cache)
     for cv_fold, data in cv_data:
         args.cv_fold = cv_fold
         process_onefold(data, cv_fold, args)
