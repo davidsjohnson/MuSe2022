@@ -55,6 +55,10 @@ def mean_pearsons(preds,labels):
 def calc_auc(preds, labels):
     preds = np.concatenate(preds)
     labels = np.concatenate(labels)
+    if labels.ndim > 1:
+        labels = np.argmax(labels, axis=1)
+    if preds.ndim > 1:
+        preds = np.argmax(preds, axis=1)
 
     fpr, tpr, thresholds = roc_curve(labels, preds)
     return auc(fpr, tpr)
