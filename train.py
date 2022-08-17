@@ -3,6 +3,7 @@ import os
 import numpy as np
 import torch
 import torch.optim as optim
+from tqdm import tqdm
 
 from eval import evaluate
 
@@ -16,7 +17,7 @@ def train(model, train_loader, optimizer, loss_fn, use_gpu=False):
     if use_gpu:
         model.cuda()
 
-    for batch, batch_data in enumerate(train_loader, 1):
+    for batch, batch_data in tqdm(enumerate(train_loader, 1)):
         features, feature_lens, labels, metas = batch_data
         batch_size = features.size(0)
 

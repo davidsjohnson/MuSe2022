@@ -21,7 +21,7 @@ N_TO_1_TASKS = {'humor', 'reaction', 'tl_stress', 'sex_test'}
 ACTIVATION_FUNCTIONS = {
     'humor': torch.nn.Sigmoid,
     'reaction': torch.nn.Sigmoid,
-    'sex_test': torch.nn.Sigmoid,
+    'sex_test': torch.nn.Identity,
     'stress':torch.nn.Tanh,
     'tl_stress': torch.nn.Tanh, # TODO compare Tanh (with label norm) with no activation (no label norm)
 }

@@ -97,6 +97,17 @@ class WrappedBCELoss(nn.Module):
         return self.loss_fn(y_pred, y_true)
 
 
+class WrappedCCELoss(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+        self.loss_fn = nn.CrossEntropyLoss()
+
+    def forward(self, y_pred, y_true, seq_lens=None):
+        y_true = torch.argmax(y_true, dim=1)
+        return self.loss_fn(y_pred, y_true)
+
+
 
 def get_segment_wise_labels(labels):
     # collapse labels to one label per segment (as originally for MuSe-Sent)

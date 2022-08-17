@@ -13,7 +13,7 @@ from utils import Logger, seed_worker, log_results
 from train import train_model
 from eval import evaluate, calc_ccc, calc_auc, mean_ccc,mean_pearsons 
 from model import Model
-from loss import CCCLoss, WrappedBCELoss, WrappedMSELoss, RMSELoss
+from loss import CCCLoss, WrappedBCELoss, WrappedMSELoss, RMSELoss, WrappedCCELoss
 from dataset import MuSeDataset, custom_collate_fn
 from data_parser import load_data
 
@@ -95,8 +95,10 @@ def parse_args(cv=False):
 def get_loss_fn(task):
     if task in ['stress']:
         return CCCLoss(), 'CCC'
-    elif task in ['humor', 'sex_test']:
+    elif task in ['humor']:
         return WrappedBCELoss(), 'Binary Crossentropy'
+    elif task in ['sex_test']:
+        return WrappedCCELoss(), 'Cross Entropy'
     elif task in ['reaction', 'tl_stress']:
         return WrappedMSELoss(reduction='mean'), 'MSE'
 
