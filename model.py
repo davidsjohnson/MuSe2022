@@ -32,14 +32,18 @@ class RNN(nn.Module):
 
 
 class OutLayer(nn.Module):
-    def __init__(self, d_in, d_hidden, d_out, dropout=.0, bias=.0):
+    def __init__(self, d_in, d_hidden, d_out, dropout=.0, bias=.0, agg_fn=None):
         super(OutLayer, self).__init__()
         self.fc_1 = nn.Sequential(nn.Linear(d_in, d_hidden), nn.ReLU(True), nn.Dropout(dropout))
         self.fc_2 = nn.Linear(d_hidden, d_out)
         nn.init.constant_(self.fc_2.bias.data, bias)
 
+        self.agg_fn = agg_fn
+
     def forward(self, x):
         y = self.fc_2(self.fc_1(x))
+        if self.agg_fn is not None:
+            y = self.agg_fn(y)
         return y
 
 

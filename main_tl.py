@@ -49,7 +49,16 @@ def process_onefold(data, cv_fold, args):
                 print(f'Loading model for transfer learning from {model_path}')
                 model = torch.load(model_path, map_location=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
 
-                model.set_n_to_1(True)  # set model for use with MBP single value ground truth
+                if args.aggregation_method is None:
+                    model.set_n_to_1(True)  # set model for use with MBP single value ground truth
+                elif args.aggregation_method == 'max':
+                    model.out.agg_fn = lambda x: torch.max(x, dim=1)
+                elif args.aggregation_method == 'mean':
+                    model.out.agg_fn = lambda x: torch.mean(x, dim=1)
+                elif args.aggregation_method == 'last':
+                    model.out.agg_fn = lambda x: x[-1]
+                else:
+                    raise ValueError(f'Aggregation method "{args.aggregation_method}" is invalid"')
 
                 # freeze layers so only ouput layers are finetuned
                 if args.freeze_rnn:

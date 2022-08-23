@@ -78,6 +78,8 @@ def parse_args(cv=False):
     parser.add_argument('--normalize_labels', action='store_true',
                         help=f'Specify if labels should be min/max scaled between -1 and 1 '
                              f'for compatibility with Tanh activation')
+    parser.add_argument('--aggregation_method', type=str, default=None,
+                        help='Specify the aggregation method to aggregate ouput of model.')
 
     if cv:
         parser.add_argument('--n_folds', type=int, required=True,
