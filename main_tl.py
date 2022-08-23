@@ -16,7 +16,7 @@ import data_parser as dp
 from dataset import MuSeDataset, custom_collate_fn
 from model import Model
 from train import train_model
-from eval import evaluate, calc_ccc, flatten_stress_for_ccc
+from eval import evaluate, calc_ccc, flatten_stress_for_ccc, rmse
 
 
 def process_onefold(data, cv_fold, args):
@@ -36,6 +36,8 @@ def process_onefold(data, cv_fold, args):
 
     loss_fn, loss_str = muse_main.get_loss_fn(args.task)
     eval_fn, eval_str = muse_main.get_eval_fn(args.task)
+
+    val_mode = 'max' if eval_fn != rmse else 'min'
 
     if args.eval_model is None:  # Train and validate for each seed
         seeds = range(args.seed, args.seed + args.n_seeds)
@@ -75,7 +77,8 @@ def process_onefold(data, cv_fold, args):
                                                                eval_metric_str=eval_str,
                                                                regularization=args.regularization,
                                                                early_stopping_patience=args.early_stopping_patience,
-                                                               reduce_lr_patience=args.reduce_lr_patience)
+                                                               reduce_lr_patience=args.reduce_lr_patience,
+                                                               val_mode=val_mode)
             # restore best model encountered during training
             model = torch.load(best_model_file)
             if not args.predict:  # run evaluation only if test labels are available
@@ -87,7 +90,7 @@ def process_onefold(data, cv_fold, args):
             val_scores.append(val_score)
             best_model_files.append(best_model_file)
 
-        best_idx = val_scores.index(max(val_scores))  # find best performing seed
+        best_idx = val_scores.index(max(val_scores) if val_mode == 'max' else min(val_scores)) # find best performing seed
 
         print('=' * 50)
         print(f'Best {eval_str} on [Val] for seed {seeds[best_idx]}: '
