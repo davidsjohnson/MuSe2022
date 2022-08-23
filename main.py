@@ -11,7 +11,7 @@ import config
 
 from utils import Logger, seed_worker, log_results
 from train import train_model
-from eval import evaluate, calc_ccc, calc_auc, mean_ccc,mean_pearsons 
+from eval import evaluate, calc_ccc, calc_auc, mean_ccc,mean_pearsons, mean_rmse
 from model import Model
 from loss import CCCLoss, WrappedBCELoss, WrappedMSELoss, RMSELoss, WrappedCCELoss
 from dataset import MuSeDataset, custom_collate_fn
@@ -101,8 +101,10 @@ def get_loss_fn(task):
         return WrappedBCELoss(), 'Binary Crossentropy'
     elif task in ['sex_test']:
         return WrappedCCELoss(), 'Cross Entropy'
-    elif task in ['reaction', 'tl_stress']:
+    elif task in ['reaction']:
         return WrappedMSELoss(reduction='mean'), 'MSE'
+    elif task in ['tl_stress']:
+        return RMSELoss(), 'RMSE'
 
 
 
@@ -110,8 +112,10 @@ def get_loss_fn(task):
 def get_eval_fn(task):
     if task in ['stress']:
         return calc_ccc, 'CCC'
-    elif task in ['reaction', 'tl_stress']:
+    elif task in ['reaction']:
         return mean_pearsons, 'Mean Pearsons'
+    elif task in ['tl_stress']:
+        return mean_rmse, 'RMSE'
     elif task in ['humor', 'sex_test']:
         return calc_auc, 'AUC-Score'
 

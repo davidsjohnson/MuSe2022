@@ -2,7 +2,7 @@ import numpy as np
 import os
 import pandas as pd
 import torch
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_curve, auc, mean_squared_error
 from scipy import stats 
 
 from config import REACTION_LABELS
@@ -50,8 +50,14 @@ def mean_pearsons(preds,labels):
     mean_r = np.mean(class_wise_r)
     return mean_r
 
+def mean_rmse(preds, labels):
+    preds = np.concatenate(preds)
+    labels = np.concatenate(labels)
 
-    
+    rmse = mean_squared_error(labels, preds, squared=False)
+    return rmse
+
+
 def calc_auc(preds, labels):
     preds = np.concatenate(preds)
     labels = np.concatenate(labels)
@@ -121,7 +127,7 @@ def evaluate(task, model, data_loader, loss_fn, eval_fn, use_gpu=False, predict=
                     print('No labels available, no evaluation')
                     return np.nan, np.nan
 
-            batch_size = features.size(0) if task not in ['stress', 'tl_stress'] else 1
+            batch_size = features.size(0) if task not in ['stress'] else 1 # only for continuous labels
 
             if use_gpu:
                 model.cuda()
@@ -133,7 +139,7 @@ def evaluate(task, model, data_loader, loss_fn, eval_fn, use_gpu=False, predict=
 
             # only relevant for stress
             feature_lens = feature_lens.detach().cpu().tolist()
-            cutoff = feature_lens[0] if task in ['stress', 'tl_stress'] else batch_size
+            cutoff = feature_lens[0] if task in ['stress'] else batch_size # only for continuous labels
             if predict:
                 full_metas.append(metas.tolist()[:cutoff])
 
