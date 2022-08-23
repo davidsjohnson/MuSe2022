@@ -121,7 +121,7 @@ def evaluate(task, model, data_loader, loss_fn, eval_fn, use_gpu=False, predict=
                     print('No labels available, no evaluation')
                     return np.nan, np.nan
 
-            batch_size = features.size(0) if task!='stress' else 1
+            batch_size = features.size(0) if task not in ['stress', 'tl_stress'] else 1
 
             if use_gpu:
                 model.cuda()
@@ -133,7 +133,7 @@ def evaluate(task, model, data_loader, loss_fn, eval_fn, use_gpu=False, predict=
 
             # only relevant for stress
             feature_lens = feature_lens.detach().cpu().tolist()
-            cutoff = feature_lens[0] if task=='stress' else batch_size
+            cutoff = feature_lens[0] if task in ['stress', 'tl_stress'] else batch_size
             if predict:
                 full_metas.append(metas.tolist()[:cutoff])
 
@@ -149,7 +149,7 @@ def evaluate(task, model, data_loader, loss_fn, eval_fn, use_gpu=False, predict=
             write_predictions(task, full_metas, full_preds, prediction_path, filename)
             return
         else:
-            if task in ['stress', 'tl_stress']:
+            if task in ['stress']:
                 full_preds = flatten_stress_for_ccc(full_preds)
                 full_labels = flatten_stress_for_ccc(full_labels)
             score = eval_fn(full_preds, full_labels)

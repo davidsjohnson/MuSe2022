@@ -78,7 +78,7 @@ def parse_args(cv=False):
     parser.add_argument('--normalize_labels', action='store_true',
                         help=f'Specify if labels should be min/max scaled between -1 and 1 '
                              f'for compatibility with Tanh activation')
-    parser.add_argument('--aggregation_method', type=str, default=None,
+    parser.add_argument('--aggregation_method', type=str, default=None, choices=[None, 'max', 'mean', 'last', 'rnn_last'],
                         help='Specify the aggregation method to aggregate ouput of model.')
 
     if cv:
@@ -150,6 +150,11 @@ def main(args):
             torch.manual_seed(seed)
 
             model = Model(args)
+
+            if args.aggregation_method == 'rnn_last':
+                model.set_n_to_1(True)  # set model for use with MBP single value ground truth
+            elif args.aggregation_method in ['max', 'mean', 'last']:
+                model.out.agg_method = args.aggregation_method  # set aggregation method for output layer
 
             print('=' * 50)
             print(f'Training model... [seed {seed}] for at most {args.epochs} epochs')
