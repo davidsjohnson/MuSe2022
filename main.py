@@ -11,7 +11,7 @@ import config
 
 from utils import Logger, seed_worker, log_results
 from train import train_model
-from eval import evaluate, calc_ccc, calc_auc, mean_ccc,mean_pearsons, mean_rmse
+from eval import evaluate, calc_ccc, calc_auc, mean_ccc,mean_pearsons, rmse
 from model import Model
 from loss import CCCLoss, WrappedBCELoss, WrappedMSELoss, RMSELoss, WrappedCCELoss
 from dataset import MuSeDataset, custom_collate_fn
@@ -115,7 +115,7 @@ def get_eval_fn(task):
     elif task in ['reaction']:
         return mean_pearsons, 'Mean Pearsons'
     elif task in ['tl_stress']:
-        return mean_rmse, 'RMSE'
+        return rmse, 'RMSE'
     elif task in ['humor', 'sex_test']:
         return calc_auc, 'AUC-Score'
 

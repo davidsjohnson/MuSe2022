@@ -5,7 +5,7 @@ import torch
 import torch.optim as optim
 from tqdm import tqdm
 
-from eval import evaluate
+from eval import evaluate, rmse
 
 
 def train(model, train_loader, optimizer, loss_fn, use_gpu=False):
@@ -60,8 +60,11 @@ def train_model(task, model, data_loader, epochs, lr, model_path, current_seed, 
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=regularization)
     lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, mode='min', patience=reduce_lr_patience,
                                                         factor=0.5, min_lr=1e-5, verbose=True)
+
+    bestval_mode = 'max' if eval_fn != rmse else 'min'
+
     best_val_loss = float('inf')
-    best_val_score = -1
+    best_val_score = -1 if bestval_mode == 'max' else float('inf')
     best_model_file = ''
     early_stop = 0
 
@@ -74,7 +77,7 @@ def train_model(task, model, data_loader, epochs, lr, model_path, current_seed, 
         print(f'Epoch:{epoch:>3} / {epochs} | [Val] | Loss: {val_loss:>.4f} | [{eval_metric_str}]: {val_score:>7.4f}')
         print('-' * 50)
 
-        if val_score > best_val_score:
+        if (val_score > best_val_score and bestval_mode == 'max') or (val_score < best_val_score and bestval_mode == 'min') :
             early_stop = 0
             best_val_score = val_score
             best_val_loss = val_loss

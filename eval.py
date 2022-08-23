@@ -50,13 +50,10 @@ def mean_pearsons(preds,labels):
     mean_r = np.mean(class_wise_r)
     return mean_r
 
-def mean_rmse(preds, labels):
+def rmse(preds, labels):
     preds = np.concatenate(preds)
     labels = np.concatenate(labels)
-
-    rmse = mean_squared_error(labels, preds, squared=False)
-    return rmse
-
+    return mean_squared_error(labels, preds, squared=False)
 
 def calc_auc(preds, labels):
     preds = np.concatenate(preds)
