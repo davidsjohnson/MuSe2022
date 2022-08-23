@@ -125,7 +125,7 @@ def main(args):
     args.emo_dim = args.emo_dim if args.task in ['stress', 'tl_stress'] else ''
     print('Loading data ...')
     data = load_data(args.task, args.paths, args.feature, args.emo_dim, args.normalize,
-                     args.win_len, args.hop_len, save=args.cache)
+                     args.normalize_labels, args.win_len, args.hop_len, save=args.cache)
     data_loader = {}
     for partition in data.keys():  # one DataLoader for each partition
         set = MuSeDataset(data, partition)
