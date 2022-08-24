@@ -50,11 +50,7 @@ def process_onefold(data, cv_fold, args):
                 model_path = Path(args.tl_model)
                 print(f'Loading model for transfer learning from {model_path}')
                 model = torch.load(model_path, map_location=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
-
-                if args.aggregation_method == 'rnn_last':
-                    model.set_n_to_1(True)  # set model for use with MBP single value ground truth
-                elif args.aggregation_method in ['max', 'mean', 'last']:
-                    model.out.agg_method = args.aggregation_method  # set aggregation method for output layer
+                model.out.agg_method = None # TODO hack to add attribute to trained model (but should retrain)
 
                 # freeze layers so only ouput layers are finetuned
                 if args.freeze_rnn:
@@ -65,6 +61,11 @@ def process_onefold(data, cv_fold, args):
 
             else:
                 model = Model(args)
+
+            if args.aggregation_method == 'rnn_last':
+                model.set_n_to_1(True)  # set model for use with MBP single value ground truth
+            elif args.aggregation_method in ['max', 'mean', 'last']:
+                model.out.agg_method = args.aggregation_method  # set aggregation method for output layer
 
             print('=' * 50)
             print(f'Training model for CV {cv_fold}... [seed {seed}] for at most {args.epochs} epochs')
