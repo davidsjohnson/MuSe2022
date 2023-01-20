@@ -43,15 +43,16 @@ class OutLayer(nn.Module):
 
     def forward(self, x):
         y = self.fc_2(self.fc_1(x))
-        if self.agg_method is not None:
-            if self.agg_method == 'max':
-                y = torch.max(y, dim=1)[0]
-            elif self.agg_method == 'mean':
-                y = torch.mean(y, dim=1)
-            elif self.agg_method == 'last':
-                y = y[:, -1, ...]
-            else:
-                raise ValueError(f'Aggregation method "{self.agg_method}" is invalid"')
+        if hasattr(self, 'agg_method'):
+            if self.agg_method is not None:
+                if self.agg_method == 'max':
+                    y = torch.max(y, dim=1)[0]
+                elif self.agg_method == 'mean':
+                    y = torch.mean(y, dim=1)
+                elif self.agg_method == 'last':
+                    y = y[:, -1, ...]
+                else:
+                    raise ValueError(f'Aggregation method "{self.agg_method}" is invalid"')
         return y
 
 
